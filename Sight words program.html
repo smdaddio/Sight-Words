@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Sight Words Practice</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background: linear-gradient(135deg, #e0f2fe 0%, #fef9c3 50%, #fce7f3 100%);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+    }
+
+    header {
+      width: 100%;
+      padding: 18px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 10;
+    }
+
+    .badge {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(6px);
+      padding: 8px 18px;
+      border-radius: 999px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #334155;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .refresh-btn {
+      background: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 999px;
+      padding: 8px 16px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #475569;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .refresh-btn:hover {
+      background: #f8fafc;
+      transform: scale(1.04);
+    }
+
+    .refresh-btn:active {
+      transform: scale(0.96);
+    }
+
+    .progress-bar-container {
+      width: 85%;
+      max-width: 600px;
+      height: 14px;
+      background: rgba(255, 255, 255, 0.7);
+      border-radius: 999px;
+      overflow: hidden;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+      z-index: 10;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #818cf8, #f472b6);
+      border-radius: 999px;
+      transition: width 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      padding: 20px;
+      z-index: 10;
+      text-align: center;
+    }
+
+    .card {
+      background: #ffffff;
+      width: 90%;
+      max-width: 680px;
+      min-height: 320px;
+      border-radius: 36px;
+      box-shadow: 0 20px 45px rgba(15, 23, 42, 0.12), 0 0 0 6px rgba(255, 255, 255, 0.6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 24px;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .card.pop {
+      animation: cardPop 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    @keyframes cardPop {
+      0% { transform: scale(0.88); opacity: 0.5; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .word-display {
+      font-size: clamp(4.5rem, 16vw, 9.5rem);
+      font-weight: 800;
+      color: #1e293b;
+      letter-spacing: 0.02em;
+      line-height: 1.1;
+      word-break: break-word;
+    }
+
+    .celebration-title {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      font-weight: 900;
+      background: linear-gradient(90deg, #ec4899, #8b5cf6, #3b82f6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 12px;
+    }
+
+    .celebration-sub {
+      font-size: clamp(1.2rem, 4vw, 1.7rem);
+      color: #475569;
+      font-weight: 700;
+    }
+
+    .status-note {
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+
+    footer {
+      padding: 20px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .tap-hint {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #475569;
+      background: rgba(255, 255, 255, 0.75);
+      padding: 10px 24px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      animation: pulseHint 2.2s infinite ease-in-out;
+    }
+
+    @keyframes pulseHint {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.04); }
+    }
+
+    /* Floating Balloons Layer */
+    #balloon-container {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 20;
+    }
+
+    .balloon {
+      position: absolute;
+      bottom: -140px;
+      width: 68px;
+      height: 84px;
+      border-radius: 50% 50% 50% 50% / 45% 45% 55% 55%;
+      box-shadow: inset -8px -10px 18px rgba(0, 0, 0, 0.15), inset 8px 10px 18px rgba(255, 255, 255, 0.45);
+      animation: floatUp linear forwards;
+    }
+
+    .balloon::before {
+      content: "";
+      position: absolute;
+      bottom: -7px;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 10px solid inherit;
+      border-bottom-color: var(--balloon-color);
+    }
+
+    .balloon::after {
+      content: "";
+      position: absolute;
+      bottom: -48px;
+      left: 50%;
+      width: 2px;
+      height: 42px;
+      background: rgba(100, 116, 139, 0.45);
+      transform: translateX(-50%);
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-60vh) rotate(6deg);
+      }
+      100% {
+        transform: translateY(-130vh) rotate(-6deg);
+        opacity: 0.95;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="balloon-container"></div>
+
+  <header>
+    <div class="badge" id="counter-badge">Loading words...</div>
+    <button class="refresh-btn" id="sync-btn" title="Reload latest words from Google Sheet">↻ Sync Sheet</button>
+  </header>
+
+  <div class="progress-bar-container">
+    <div class="progress-bar-fill" id="progress-fill"></div>
+  </div>
+
+  <main id="tap-area">
+    <div class="card" id="word-card">
+      <div class="word-display" id="word-text">...</div>
+      <div class="status-note" id="sync-status"></div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="tap-hint" id="hint-text">Tap anywhere for the next word!</div>
+  </footer>
+
+  <script>
+    // Google Sheet configuration
+    const SHEET_ID = "1TPD9k9CbIs_9zgqIbiA-zMrSAx7rmXqhDzYRPO-rZQk";
+    const CSV_EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+    const GVIZ_CSV_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+
+    // Fallback snapshot of words from your sheet (used only if offline or sheet is not publicly viewable)
+    const FALLBACK_WORDS = [
+      "I", "see", "the", "a", "of", "to", "as", "put", "do", "is",
+      "are", "for", "go", "by", "am", "can", "was", "you", "from",
+      "did", "has", "it", "on", "and"
+    ];
+
+    let masterWords = [];
+    let deck = [];
+    let currentIndex = 0;
+    let isCelebrating = false;
+    let balloonInterval = null;
+
+    const wordCard = document.getElementById("word-card");
+    const wordText = document.getElementById("word-text");
+    const syncStatus = document.getElementById("sync-status");
+    const counterBadge = document.getElementById("counter-badge");
+    const progressFill = document.getElementById("progress-fill");
+    const hintText = document.getElementById("hint-text");
+    const syncBtn = document.getElementById("sync-btn");
+    const balloonContainer = document.getElementById("balloon-container");
+
+    // Parse CSV column A, skipping header "Word" and blank rows
+    function parseWordsFromCSV(csvText) {
+      const lines = csvText.split(/\r?\n/);
+      const parsed = [];
+      for (let i = 0; i < lines.length; i++) {
+        let cell = lines[i].split(",")[0] || "";
+        cell = cell.replace(/^"|"$/g, "").trim();
+        if (!cell) continue;
+        if (i === 0 && cell.toLowerCase() === "word") continue;
+        if (!parsed.includes(cell)) {
+          parsed.push(cell);
+        }
+      }
+      return parsed;
+    }
+
+    // Fetch live words from Google Sheets so newly added words appear automatically
+    async function fetchLiveWords() {
+      const cacheBuster = `&_t=${Date.now()}`;
+      const urls = [CSV_EXPORT_URL + cacheBuster, GVIZ_CSV_URL + cacheBuster];
+
+      for (const url of urls) {
+        try {
+          const response = await fetch(url, { cache: "no-store" });
+          if (!response.ok) continue;
+          const text = await response.text();
+          // Guard against HTML login page if sheet is private
+          if (text.trim().startsWith("<!DOCTYPE") || text.includes("<html")) {
+            continue;
+          }
+          const words = parseWordsFromCSV(text);
+          if (words.length > 0) {
+            return { words, live: true };
+          }
+        } catch (err) {
+          // Try next endpoint
+        }
+      }
+      return { words: [...FALLBACK_WORDS], live: false };
+    }
+
+    // Fisher-Yates shuffle for true non-repeating random order
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function stopCelebration() {
+      isCelebrating = false;
+      if (balloonInterval) {
+        clearInterval(balloonInterval);
+        balloonInterval = null;
+      }
+      balloonContainer.innerHTML = "";
+    }
+
+    function launchBalloons() {
+      const colors = ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93", "#ff70a6", "#38bdf8"];
+      const spawnOne = () => {
+        const balloon = document.createElement("div");
+        balloon.className = "balloon";
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        const left = Math.random() * 90 + 2;
+        const duration = Math.random() * 2.5 + 3.5;
+        const scale = Math.random() * 0.35 + 0.85;
+
+        balloon.style.backgroundColor = color;
+        balloon.style.setProperty("--balloon-color", color);
+        balloon.style.left = `${left}%`;
+        balloon.style.animationDuration = `${duration}s`;
+        balloon.style.transform = `scale(${scale})`;
+
+        balloonContainer.appendChild(balloon);
+        setTimeout(() => balloon.remove(), duration * 1000);
+      };
+
+      for (let i = 0; i < 16; i++) {
+        setTimeout(spawnOne, i * 160);
+      }
+      balloonInterval = setInterval(spawnOne, 380);
+    }
+
+    function launchConfetti() {
+      if (typeof confetti !== "function") return;
+      confetti({
+        particleCount: 110,
+        spread: 80,
+        origin: { y: 0.6 }
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 70,
+          angle: 60,
+          spread: 65,
+          origin: { x: 0, y: 0.65 }
+        });
+        confetti({
+          particleCount: 70,
+          angle: 120,
+          spread: 65,
+          origin: { x: 1, y: 0.65 }
+        });
+      }, 300);
+    }
+
+    function triggerCelebration() {
+      isCelebrating = true;
+      counterBadge.textContent = `All ${deck.length} Done! ★`;
+      progressFill.style.width = "100%";
+      hintText.textContent = "Tap anywhere to start a brand-new shuffled round!";
+
+      wordCard.innerHTML = `
+        <div class="celebration-title">🎉 Amazing Job! 🎉</div>
+        <div class="celebration-sub">You finished all ${deck.length} sight words!</div>
+      `;
+      animateCard();
+      launchConfetti();
+      launchBalloons();
+    }
+
+    function animateCard() {
+      wordCard.classList.remove("pop");
+      void wordCard.offsetWidth; // trigger reflow
+      wordCard.classList.add("pop");
+    }
+
+    function renderCurrentWord(isLive = true) {
+      const total = deck.length;
+      const word = deck[currentIndex];
+
+      counterBadge.textContent = `Word ${currentIndex + 1} of ${total}`;
+      progressFill.style.width = `${((currentIndex + 1) / total) * 100}%`;
+      hintText.textContent = "Tap anywhere or press Space for the next word";
+
+      wordCard.innerHTML = `
+        <div class="word-display">${word}</div>
+        <div class="status-note">${isLive ? "" : "Offline / Private Sheet fallback active"}</div>
+      `;
+      animateCard();
+    }
+
+    async function startNewRound(refreshFromSheet = true) {
+      stopCelebration();
+      let isLive = true;
+
+      if (refreshFromSheet || masterWords.length === 0) {
+        counterBadge.textContent = "Syncing words...";
+        const result = await fetchLiveWords();
+        masterWords = result.words;
+        isLive = result.live;
+      }
+
+      deck = shuffleArray(masterWords);
+      currentIndex = 0;
+      renderCurrentWord(isLive);
+    }
+
+    async function handleAdvance() {
+      if (deck.length === 0) return;
+
+      if (isCelebrating) {
+        // Re-fetch from Google Sheets on every new cycle to pick up newly added words
+        await startNewRound(true);
+        return;
+      }
+
+      if (currentIndex < deck.length - 1) {
+        currentIndex++;
+        renderCurrentWord(true);
+      } else {
+        triggerCelebration();
+      }
+    }
+
+    // Tap / click anywhere on screen to advance
+    document.body.addEventListener("click", (e) => {
+      if (e.target.closest("#sync-btn")) return;
+      handleAdvance();
+    });
+
+    // Keyboard support (Space, Enter, Right Arrow)
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" || e.code === "ArrowRight" || e.code === "Enter") {
+        e.preventDefault();
+        handleAdvance();
+      }
+    });
+
+    // Manual sync button to immediately pull newly added words mid-session
+    syncBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      await startNewRound(true);
+    });
+
+    // Initialize on page load
+    startNewRound(true);
+  </script>
+</body>
+</html>
+
